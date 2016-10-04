@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+        xmlns="http://www.springframework.org/schema/beans"
+        xmlns:batch="http://www.springframework.org/schema/batch"
+        xmlns:context="http://www.springframework.org/schema/context"
+        xmlns:task="http://www.springframework.org/schema/task"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.springframework.org/schema/batch
+        http://www.springframework.org/schema/batch/spring-batch-2.2.xsd
+	    http://www.springframework.org/schema/beans
+	    http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+	    http://www.springframework.org/schema/context
+	    http://www.springframework.org/schema/context/spring-context-3.2.xsd
+	    http://www.springframework.org/schema/task
+	    http://www.springframework.org/schema/task/spring-task-3.2.xsd
+        "
+>
+    <!-- stored job-meta in memory -->
+    <bean id="jobRepository" class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+        <property name="transactionManager" ref="transactionManager"/>
+    </bean>
+    <bean id="transactionManager" class="org.springframework.batch.support.transaction.ResourcelessTransactionManager"/>
+    <bean id="jobLauncher" class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository"/>
+    </bean>
+
+    <!-- ORACLE -->
+    <bean id="dataSource" class="oracle.jdbc.pool.OracleDataSource" destroy-method="close">
+        <property name="URL" value="jdbc:oracle:thin:@//localhost:1521/XE" />
+        <property name="user" value=""/>
+        <property name="password" value=""/>
+    </bean>
+
+    <!-- partitioner job -->
+    <bean id="taskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor"/>
+    <job id="mainJob" xmlns="http://www.springframework.org/schema/batch">
+        <!-- master step, 10 threads (grid-size)  -->
+        <step id="masterStep">
+            <partition step="slave" partitioner="rangePartitioner">
+                <handler grid-size="10" task-executor="taskExecutor"/>
+            </partition>
+        </step>
+    </job>
+
+    <!-- Jobs to run -->
+    <step id="slave" xmlns="http://www.springframework.org/schema/batch">
+        <tasklet>
+            <chunk
+                    reader="pagingItemReader"
+                    writer="dbItemWriter"
+                    processor="itemProcessor"
+                    commit-interval="1"
+            />
+        </tasklet>
+    </step>
+
+    <bean id="itemProcessor" class="batchboot.Processor" />
+    <bean id="rangePartitioner" class="batchboot.RangePartitioner" />
+
+    <bean id="pagingItemReader" class="org.springframework.batch.item.database.JdbcPagingItemReader" scope="step">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="queryProvider">
+            <bean class="org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean">
+                <property name="dataSource" ref="dataSource"/>
+                <property name="selectClause" value="select id,descr"/>
+                <property name="fromClause" value="from itenspros"/>
+                <property name="whereClause" value="where id &gt;= :fromId and id &lt;= :toId"/>
+                <property name="sortKey" value="id"/>
+            </bean>
+        </property>
+        <!-- Inject via the ExecutionContext in rangePartitioner -->
+        <property name="parameterValues">
+            <map>
+                <entry key="fromId" value="#{stepExecutionContext[fromId]}"/>
+                <entry key="toId" value="#{stepExecutionContext[toId]}"/>
+            </map>
+        </property>
+        <property name="pageSize" value="2"/>
+        <property name="rowMapper">
+            <bean class="batchboot.TablePojoRowMapper"/>
+        </property>
+    </bean>
+
+    <bean id="dbItemWriter" class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+        <property name="dataSource" ref="dataSource" />
+        <property name="sql">
+            <value>
+                <![CDATA[
+            	    insert into ITPROCESS(ID,DESCR) values (:id, :descr)
+                ]]>
+            </value>
+        </property>
+        <property name="itemSqlParameterSourceProvider">
+            <bean class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+        </property>
+    </bean>
+
+</beans>
