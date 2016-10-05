@@ -16,17 +16,6 @@ public class TablePojo implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        TablePojo tablePojo = (TablePojo) o;
-
-        return id != null ? id.equals(tablePojo.id) : tablePojo.id == null;
-
-    }
-
-    @Override
     public int hashCode() {
         return id != null ? id.hashCode() : 0;
     }

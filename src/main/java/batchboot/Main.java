@@ -13,7 +13,7 @@ import java.io.File;
 
 public class Main {
 
-    private static final Log LOG = LogFactory.getLog(Task.class);
+    private static final Log LOG = LogFactory.getLog(Main.class);
 
     private String contexts;
     public String getContexts() {
