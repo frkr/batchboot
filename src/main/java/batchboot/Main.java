@@ -36,7 +36,7 @@ public class Main {
 
     public void run() throws Exception {
         LOG.info("Config...");
-        ApplicationContext context = new FileSystemXmlApplicationContext(contexts.split(","));
+        ApplicationContext context = new FileSystemXmlApplicationContext(contexts.split(",")); // FIXME Close
         LOG.info("Config Done.");
 
         LOG.info("Job...");
