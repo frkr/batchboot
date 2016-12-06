@@ -55,7 +55,9 @@
     </step>
 
     <bean id="itemProcessor" class="batchboot.Processor" />
-    <bean id="rangePartitioner" class="batchboot.RangePartitioner" />
+    <bean id="rangePartitioner" class="batchboot.RangePartitioner">
+	<property name="range" value="10"/>
+    </bean>
 
     <bean id="pagingItemReader" class="org.springframework.batch.item.database.JdbcPagingItemReader" scope="step">
         <property name="dataSource" ref="dataSource"/>
