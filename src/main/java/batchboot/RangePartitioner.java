@@ -8,11 +8,20 @@ import java.util.Map;
 
 public class RangePartitioner implements Partitioner {
 
+	private Integer range=10;
+
+	public Integer getRange() {
+		return range;
+	}
+
+	public void setRange(Integer range) {
+		this.range = range;
+	}
+
 	@Override
 	public Map<String, ExecutionContext> partition(int gridSize) {
 		Map<String, ExecutionContext> result = new HashMap<String, ExecutionContext>();
 
-		int range = 10;
 		int fromId = 1;
 		int toId = range;
 
